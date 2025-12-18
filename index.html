@@ -51,6 +51,14 @@
                     <option value="gemini">Google Gemini</option>
                 </select>
                 
+                <div id="geminiModelSelector" style="display: none; margin-top: 10px;">
+                    <label>Chọn Gemini Model:</label>
+                    <select id="geminiModel" onchange="updateAIProviderInfo()">
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Nhanh, đa năng)</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Mạnh hơn, chậm hơn)</option>
+                    </select>
+                </div>
+                
                 <div id="aiProviderInfo" style="padding: 10px; background: #34495e; border-radius: 6px; margin: 10px 0; font-size: 11px; line-height: 1.5;">
                 </div>
                 
@@ -90,15 +98,16 @@
             <div class="chat-container" id="chatContainer">
                 <div class="message ai-message">
                     <div class="message-content">
-                        <strong>AI Assistant:</strong>
-                        <p>Xin chào! Tôi là trợ lý AI giúp bạn quản lý tài khoản. Bạn có thể:</p>
-                        <ul>
-                            <li>📝 Thêm tài khoản mới: "Thêm tài khoản email@example.com giá 50k"</li>
-                            <li>👤 Thêm khách hàng: "Bán cho khách Zalo: Nguyễn Văn A"</li>
-                            <li>💰 Cập nhật thanh toán: "Khách A đã thanh toán"</li>
-                            <li>📊 Xem thống kê: "Thống kê tài khoản"</li>
-                            <li>🖼️ Gửi ảnh màn hình để AI tự động nhận diện thông tin</li>
-                        </ul>
+                        <strong>🤖 AI Assistant</strong>
+                        <p class="msg-text">Xin chào! Tôi là trợ lý AI giúp bạn quản lý tài khoản. Bạn có thể:
+
+📝 Thêm tài khoản: "Thêm tài khoản email@example.com giá 50k"
+👤 Thêm khách hàng: "Bán cho khách Zalo: Nguyễn Văn A"
+💰 Thanh toán: "Khách A đã thanh toán"
+📊 Thống kê: "Thống kê tài khoản"
+🖼️ Gửi ảnh để AI tự động nhận diện
+
+⌨️ Mẹo: Enter để gửi, Shift+Enter để xuống dòng</p>
                     </div>
                 </div>
             </div>
@@ -108,12 +117,12 @@
                 <button class="attach-btn" onclick="document.getElementById('imageInput').click()">
                     📎
                 </button>
-                <input 
-                    type="text" 
+                <textarea 
                     id="messageInput" 
-                    placeholder="Nhập tin nhắn hoặc đính kèm ảnh..." 
-                    onkeypress="handleKeyPress(event)"
-                />
+                    rows="1"
+                    placeholder="Nhập tin nhắn (Shift+Enter: xuống dòng, Enter: gửi)..." 
+                    onkeydown="handleKeyPress(event)"
+                ></textarea>
                 <button onclick="sendMessage()">Gửi</button>
             </div>
 

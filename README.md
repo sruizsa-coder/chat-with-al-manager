@@ -22,11 +22,14 @@
 4. Copy API Key
 5. **Ưu điểm**: Nhanh gấp 5-10 lần Gemini, 14,400 requests/ngày
 
-#### Tùy chọn B: Google Gemini
+#### Tùy chọn B: Google Gemini (Hỗ trợ hình ảnh, video, âm thanh)
 1. Truy cập: https://aistudio.google.com/app/apikey
 2. Đăng nhập với Google
 3. Tạo API Key mới
 4. Copy API Key
+5. **Chọn model**:
+   - **Gemini 2.5 Flash**: Nhanh, đa năng, multimodal (văn bản, hình ảnh, video, âm thanh)
+   - **Gemini 2.5 Pro**: Chất lượng cao nhất, reasoning tốt hơn, chậm hơn một chút
 
 ### 2. Cài đặt ứng dụng
 

@@ -5,15 +5,18 @@ let database = {
     transactions: []
 };
 
+let chatHistory = [];
 let currentImage = null;
 let apiKey = localStorage.getItem('ai_api_key') || '';
 let aiProvider = localStorage.getItem('ai_provider') || 'groq'; // groq or gemini
+let geminiModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash'; // gemini-2.5-flash or gemini-2.5-pro
 let useCloudStorage = localStorage.getItem('use_cloud_storage') === 'true';
 let spreadsheetId = localStorage.getItem('spreadsheet_id') || '1L-iggbSlUwE6Z83GBHdOPLaTn9IpqaQoaHgzBKyhPVU';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     loadDatabase();
+    loadChatHistory();
     updateStats();
     if (apiKey) {
         document.getElementById('apiKey').value = apiKey;
@@ -23,9 +26,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Set AI provider
     document.getElementById('aiProvider').value = aiProvider;
+    document.getElementById('geminiModel').value = geminiModel;
     updateStorageStatus();
     updateAIProviderInfo();
 });
+
+// Chat history functions
+function loadChatHistory() {
+    const saved = localStorage.getItem('chat_history');
+    if (saved) {
+        chatHistory = JSON.parse(saved);
+        // Restore chat messages
+        const chatContainer = document.getElementById('chatContainer');
+        chatHistory.forEach((msg, index) => {
+            if (index > 0) { // Skip welcome message
+                addMessageToUI(msg.content, msg.type, msg.imageUrl, msg.id);
+            }
+        });
+    }
+}
+
+function saveChatHistory() {
+    localStorage.setItem('chat_history', JSON.stringify(chatHistory));
+}
+
+function clearChatHistory() {
+    chatHistory = [];
+    localStorage.removeItem('chat_history');
+}
 
 // Database functions
 async function loadDatabase() {
@@ -125,12 +153,15 @@ function updateStats() {
 function saveApiKey() {
     const key = document.getElementById('apiKey').value.trim();
     const provider = document.getElementById('aiProvider').value;
+    const model = document.getElementById('geminiModel').value;
     
     if (key) {
         localStorage.setItem('ai_api_key', key);
         localStorage.setItem('ai_provider', provider);
+        localStorage.setItem('gemini_model', model);
         apiKey = key;
         aiProvider = provider;
+        geminiModel = model;
         addMessage(`✅ Đã lưu ${provider.toUpperCase()} API Key thành công!`, 'ai');
         updateAIProviderInfo();
     } else {
@@ -141,8 +172,11 @@ function saveApiKey() {
 function updateAIProviderInfo() {
     const infoEl = document.getElementById('aiProviderInfo');
     const provider = document.getElementById('aiProvider').value;
+    const geminiModelSelector = document.getElementById('geminiModelSelector');
+    const selectedModel = document.getElementById('geminiModel').value;
     
     if (provider === 'groq') {
+        geminiModelSelector.style.display = 'none';
         infoEl.innerHTML = `
             <strong>🚀 Groq - Siêu nhanh (Text only)</strong><br>
             Model: Llama 3.3 (70B)<br>
@@ -152,12 +186,29 @@ function updateAIProviderInfo() {
             <a href="https://console.groq.com/keys" target="_blank">Lấy API key tại đây</a>
         `;
     } else {
-        infoEl.innerHTML = `
-            <strong>🔷 Google Gemini</strong><br>
-            Model: Gemini 1.5 Flash<br>
-            Limit: 15 requests/phút<br>
-            <a href="https://aistudio.google.com/app/apikey" target="_blank">Lấy API key tại đây</a>
-        `;
+        geminiModelSelector.style.display = 'block';
+        
+        if (selectedModel === 'gemini-2.5-flash') {
+            infoEl.innerHTML = `
+                <strong>🔷 Google Gemini 2.5 Flash</strong><br>
+                Model: gemini-2.5-flash<br>
+                Hỗ trợ: Văn bản, hình ảnh, video, âm thanh<br>
+                Ưu điểm: Nhanh, hiệu quả chi phí<br>
+                Limit: 15 requests/phút (miễn phí)<br>
+                Thinking: Có thể tắt để tăng tốc<br>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank">Lấy API key tại đây</a>
+            `;
+        } else {
+            infoEl.innerHTML = `
+                <strong>💎 Google Gemini 2.5 Pro</strong><br>
+                Model: gemini-2.5-pro<br>
+                Hỗ trợ: Văn bản, hình ảnh, video, âm thanh<br>
+                Ưu điểm: Chất lượng cao nhất, reasoning tốt<br>
+                Limit: 10 requests/phút (miễn phí)<br>
+                Thinking: Luôn bật để tối ưu chất lượng<br>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank">Lấy API key tại đây</a>
+            `;
+        }
     }
 }
 
@@ -198,9 +249,18 @@ function updateStorageStatus() {
 
 // Chat functions
 function addMessage(content, type = 'user', imageUrl = null) {
+    const msgId = Date.now();
+    const messageData = { id: msgId, content, type, imageUrl, timestamp: new Date().toISOString() };
+    chatHistory.push(messageData);
+    saveChatHistory();
+    addMessageToUI(content, type, imageUrl, msgId);
+}
+
+function addMessageToUI(content, type = 'user', imageUrl = null, msgId = null) {
     const chatContainer = document.getElementById('chatContainer');
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}-message`;
+    messageDiv.setAttribute('data-msg-id', msgId || Date.now());
     
     let messageHTML = '<div class="message-content">';
     if (type === 'ai') {
@@ -213,7 +273,22 @@ function addMessage(content, type = 'user', imageUrl = null) {
         messageHTML += `<img src="${imageUrl}" alt="Uploaded image">`;
     }
     
-    messageHTML += `<p>${content}</p></div>`;
+    messageHTML += `<p class="msg-text">${content.replace(/\n/g, '<br>')}</p>`;
+    
+    // Add action buttons
+    if (type === 'user' || type === 'ai') {
+        messageHTML += `<div class="message-actions">`;
+        if (type === 'user') {
+            messageHTML += `<button class="msg-action-btn" onclick="editMessage(${msgId})" title="Chỉnh sửa">✏️</button>`;
+        }
+        if (type === 'ai') {
+            messageHTML += `<button class="msg-action-btn" onclick="regenerateMessage(${msgId})" title="Tải lại">🔄</button>`;
+        }
+        messageHTML += `<button class="msg-action-btn" onclick="deleteMessage(${msgId})" title="Xóa">🗑️</button>`;
+        messageHTML += `</div>`;
+    }
+    
+    messageHTML += '</div>';
     messageDiv.innerHTML = messageHTML;
     
     chatContainer.appendChild(messageDiv);
@@ -228,6 +303,80 @@ function clearChat() {
             msg.remove();
         }
     });
+    clearChatHistory();
+}
+
+function editMessage(msgId) {
+    const msg = chatHistory.find(m => m.id === msgId);
+    if (!msg) return;
+    
+    const newText = prompt('Chỉnh sửa tin nhắn:', msg.content);
+    if (newText && newText.trim()) {
+        msg.content = newText.trim();
+        saveChatHistory();
+        
+        // Update UI
+        const msgDiv = document.querySelector(`[data-msg-id="${msgId}"]`);
+        if (msgDiv) {
+            msgDiv.querySelector('.msg-text').innerHTML = newText.replace(/\n/g, '<br>');
+        }
+        
+        // Regenerate AI response
+        if (msg.type === 'user') {
+            regenerateFromMessage(msgId);
+        }
+    }
+}
+
+async function regenerateMessage(msgId) {
+    const msgIndex = chatHistory.findIndex(m => m.id === msgId);
+    if (msgIndex < 0) return;
+    
+    // Find previous user message
+    let userMsg = null;
+    for (let i = msgIndex - 1; i >= 0; i--) {
+        if (chatHistory[i].type === 'user') {
+            userMsg = chatHistory[i];
+            break;
+        }
+    }
+    
+    if (!userMsg) return;
+    
+    // Remove old AI response
+    deleteMessage(msgId, false);
+    
+    // Generate new response
+    await processWithAI(userMsg.content, userMsg.imageUrl);
+}
+
+async function regenerateFromMessage(msgId) {
+    // Remove all messages after this one
+    const msgIndex = chatHistory.findIndex(m => m.id === msgId);
+    if (msgIndex < 0) return;
+    
+    const messagesToRemove = chatHistory.slice(msgIndex + 1);
+    messagesToRemove.forEach(m => {
+        const div = document.querySelector(`[data-msg-id="${m.id}"]`);
+        if (div) div.remove();
+    });
+    
+    chatHistory = chatHistory.slice(0, msgIndex + 1);
+    saveChatHistory();
+    
+    // Regenerate from this message
+    const msg = chatHistory[msgIndex];
+    await processWithAI(msg.content, msg.imageUrl);
+}
+
+function deleteMessage(msgId, updateHistory = true) {
+    if (updateHistory) {
+        chatHistory = chatHistory.filter(m => m.id !== msgId);
+        saveChatHistory();
+    }
+    
+    const msgDiv = document.querySelector(`[data-msg-id="${msgId}"]`);
+    if (msgDiv) msgDiv.remove();
 }
 
 async function sendMessage() {
@@ -293,20 +442,20 @@ Khi phát hiện thông tin mới, hãy trả về JSON với format:
         }
         
         // Try to parse as JSON for actions
+        let finalResponse = aiResponse;
         try {
             const parsed = JSON.parse(aiResponse);
-            if (parsed.action) {
+            if (parsed.action && parsed.action !== 'response') {
                 handleAIAction(parsed);
-                return;
+                finalResponse = parsed.message || aiResponse;
             }
         } catch (e) {
-            // Not JSON, just display response
+            // Not JSON, try to auto-detect actions
+            finalResponse = autoDetectAndExecuteActions(message, aiResponse);
         }
         
-        // Process response for special commands
-        processUserCommand(message, aiResponse);
-        
-        addMessage(aiResponse, 'ai');
+        // Display final response
+        addMessage(finalResponse, 'ai');
         
     } catch (error) {
         console.error('AI Error:', error);
@@ -385,7 +534,7 @@ async function callGeminiAPI(systemPrompt, userMessage, imageData) {
         };
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -399,6 +548,66 @@ async function callGeminiAPI(systemPrompt, userMessage, imageData) {
 
     const data = await response.json();
     return data.candidates[0].content.parts[0].text;
+}
+
+function autoDetectAndExecuteActions(userMessage, aiResponse) {
+    const lowerMsg = userMessage.toLowerCase();
+    
+    // Auto-detect adding account
+    if (lowerMsg.includes('thêm tài khoản') || lowerMsg.includes('tài khoản mới')) {
+        const emailMatch = userMessage.match(/([\w.-]+@[\w.-]+\.\w+)/i);
+        const priceMatch = userMessage.match(/(\d+)k/i);
+        
+        if (emailMatch) {
+            const account = {
+                id: Date.now(),
+                email: emailMatch[1],
+                price: priceMatch ? parseInt(priceMatch[1]) + '000đ' : 'Chưa rõ',
+                status: 'available',
+                createdAt: new Date().toISOString()
+            };
+            database.accounts.push(account);
+            saveDatabase();
+            return `✅ Đã tự động thêm tài khoản: ${emailMatch[1]} (${account.price})\n\n${aiResponse}`;
+        }
+    }
+    
+    // Auto-detect adding customer
+    if (lowerMsg.includes('thêm khách') || lowerMsg.includes('khách hàng mới') || lowerMsg.includes('bán cho')) {
+        const nameMatch = userMessage.match(/(?:khách|zalo|tên)\s*[:：]?\s*([\p{L}\s]+)/ui);
+        const phoneMatch = userMessage.match(/(0\d{9}|\+84\d{9})/i);
+        
+        if (nameMatch || phoneMatch) {
+            const customer = {
+                id: Date.now(),
+                name: nameMatch ? nameMatch[1].trim() : 'Khách hàng',
+                contact: phoneMatch ? phoneMatch[1] : 'Chưa có',
+                createdAt: new Date().toISOString()
+            };
+            database.customers.push(customer);
+            saveDatabase();
+            return `✅ Đã tự động thêm khách hàng: ${customer.name} (${customer.contact})\n\n${aiResponse}`;
+        }
+    }
+    
+    // Auto-detect transaction
+    if (lowerMsg.includes('thanh toán') || lowerMsg.includes('đã trả') || lowerMsg.includes('payment')) {
+        const amountMatch = userMessage.match(/(\d+)k/i) || userMessage.match(/(\d+)đ/i);
+        
+        if (amountMatch) {
+            const transaction = {
+                id: Date.now(),
+                amount: amountMatch[1] + (amountMatch[0].includes('k') ? '000đ' : 'đ'),
+                status: 'paid',
+                createdAt: new Date().toISOString()
+            };
+            database.transactions.push(transaction);
+            saveDatabase();
+            return `✅ Đã tự động ghi nhận thanh toán: ${transaction.amount}\n\n${aiResponse}`;
+        }
+    }
+    
+    return aiResponse;
 }
 
 function handleAIAction(action) {
@@ -507,9 +716,11 @@ function removeImage() {
 }
 
 function handleKeyPress(event) {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
         sendMessage();
     }
+    // Shift+Enter sẽ cho phép xuống dòng tự nhiên
 }
 
 // Quick actions
