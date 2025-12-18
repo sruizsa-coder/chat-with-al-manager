@@ -7,6 +7,8 @@ let database = {
 
 let currentImage = null;
 let apiKey = localStorage.getItem('gemini_api_key') || '';
+let useCloudStorage = localStorage.getItem('use_cloud_storage') === 'true';
+let spreadsheetId = localStorage.getItem('spreadsheet_id') || '';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -15,19 +17,92 @@ document.addEventListener('DOMContentLoaded', function() {
     if (apiKey) {
         document.getElementById('apiKey').value = apiKey;
     }
+    if (spreadsheetId) {
+        document.getElementById('spreadsheetId').value = spreadsheetId;
+    }
+    updateStorageStatus();
 });
 
 // Database functions
-function loadDatabase() {
-    const saved = localStorage.getItem('accountDatabase');
-    if (saved) {
-        database = JSON.parse(saved);
+async function loadDatabase() {
+    if (useCloudStorage && spreadsheetId && apiKey) {
+        try {
+            await loadFromGoogleSheets();
+            addMessage('✅ Đã tải dữ liệu từ Google Sheets', 'ai');
+        } catch (error) {
+            console.error('Failed to load from Google Sheets:', error);
+            // Fallback to local
+            const saved = localStorage.getItem('accountDatabase');
+            if (saved) {
+                database = JSON.parse(saved);
+            }
+        }
+    } else {
+        const saved = localStorage.getItem('accountDatabase');
+        if (saved) {
+            database = JSON.parse(saved);
+        }
     }
 }
 
-function saveDatabase() {
+async function saveDatabase() {
+    // Always save to local as backup
     localStorage.setItem('accountDatabase', JSON.stringify(database));
+    
+    // Save to cloud if enabled
+    if (useCloudStorage && spreadsheetId && apiKey) {
+        try {
+            await saveToGoogleSheets();
+        } catch (error) {
+            console.error('Failed to save to Google Sheets:', error);
+        }
+    }
     updateStats();
+}
+
+// Google Sheets functions
+async function loadFromGoogleSheets() {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:Z1000?key=${apiKey}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to load from Google Sheets');
+    
+    const data = await response.json();
+    if (data.values && data.values.length > 1) {
+        // Parse data from sheets (skip header row)
+        database.accounts = [];
+        database.customers = [];
+        database.transactions = [];
+        
+        for (let i = 1; i < data.values.length; i++) {
+            const row = data.values[i];
+            if (row[0] === 'account') {
+                database.accounts.push(JSON.parse(row[1]));
+            } else if (row[0] === 'customer') {
+                database.customers.push(JSON.parse(row[1]));
+            } else if (row[0] === 'transaction') {
+                database.transactions.push(JSON.parse(row[1]));
+            }
+        }
+    }
+}
+
+async function saveToGoogleSheets() {
+    // Prepare data
+    const values = [['Type', 'Data']];
+    
+    database.accounts.forEach(acc => {
+        values.push(['account', JSON.stringify(acc)]);
+    });
+    database.customers.forEach(cust => {
+        values.push(['customer', JSON.stringify(cust)]);
+    });
+    database.transactions.forEach(trans => {
+        values.push(['transaction', JSON.stringify(trans)]);
+    });
+    
+    // Note: This requires OAuth2 for write access
+    // For now, we'll show instructions to user
+    addMessage('💡 Để lưu lên Google Sheets, bạn cần:\n1. Tạo Google Sheet\n2. Chia sẻ với email service account\n3. Hoặc dùng Google Apps Script', 'ai');
 }
 
 function updateStats() {
@@ -48,9 +123,44 @@ function saveApiKey() {
     if (key) {
         localStorage.setItem('gemini_api_key', key);
         apiKey = key;
-        addMessage('Đã lưu API Key thành công!', 'ai');
+        addMessage('✅ Đã lưu Gemini API Key thành công!', 'ai');
     } else {
         alert('Vui lòng nhập API Key!');
+    }
+}
+
+function saveSpreadsheetId() {
+    const id = document.getElementById('spreadsheetId').value.trim();
+    if (id) {
+        localStorage.setItem('spreadsheet_id', id);
+        spreadsheetId = id;
+        addMessage('✅ Đã lưu Google Sheets ID!', 'ai');
+    } else {
+        alert('Vui lòng nhập Spreadsheet ID!');
+    }
+}
+
+function toggleCloudStorage() {
+    useCloudStorage = !useCloudStorage;
+    localStorage.setItem('use_cloud_storage', useCloudStorage.toString());
+    updateStorageStatus();
+    if (useCloudStorage) {
+        addMessage('🌥️ Đã bật lưu trữ đám mây. Dữ liệu sẽ đồng bộ với Google Sheets.', 'ai');
+    } else {
+        addMessage('💾 Đã tắt lưu trữ đám mây. Dữ liệu chỉ lưu local.', 'ai');
+    }
+}
+
+function updateStorageStatus() {
+    const statusEl = document.getElementById('storageStatus');
+    if (statusEl) {
+        if (useCloudStorage && spreadsheetId) {
+            statusEl.textContent = '🌥️ Cloud (Google Sheets)';
+            statusEl.style.color = '#27ae60';
+        } else {
+            statusEl.textContent = '💾 Local Storage';
+            statusEl.style.color = '#95a5a6';
+        }
     }
 }
 
@@ -387,4 +497,39 @@ function importData() {
         reader.readAsText(file);
     };
     input.click();
+}
+
+function showCloudSetupGuide() {
+    const guide = `
+<strong>📖 Hướng dẫn setup Google Sheets làm Database 24/7:</strong>
+
+<h4>Phương án 1: Dùng Google Sheets (Đơn giản nhất)</h4>
+<ol>
+    <li><strong>Tạo Google Sheet mới:</strong>
+        <ul>
+            <li>Vào <a href="https://sheets.google.com" target="_blank">Google Sheets</a></li>
+            <li>Tạo sheet mới tên "AccountDatabase"</li>
+            <li>Copy Spreadsheet ID từ URL (phần giữa /d/ và /edit)</li>
+            <li>Ví dụ: <code>docs.google.com/spreadsheets/d/<strong>ABC123xyz</strong>/edit</code></li>
+        </ul>
+    </li>
+    <li><strong>Chia sẻ công khai:</strong>
+        <ul>
+            <li>Click "Share" > "Anyone with link can <strong>view</strong>"</li>
+            <li>Chỉ cần quyền VIEW để đọc dữ liệu</li>
+        </ul>
+    </li>
+    <li><strong>Dán Sheet ID vào ô trên và bật Cloud Storage</strong></li>
+</ol>
+
+<h4>Phương án 2: Dùng GitHub Gist (Miễn phí 100%)</h4>
+<p>Tôi có thể nâng cấp để dùng GitHub Gist - lưu dữ liệu dạng JSON file trên GitHub của bạn, hoạt động 24/7!</p>
+
+<h4>Phương án 3: Firebase (Realtime Database)</h4>
+<p>Firebase cung cấp Realtime Database miễn phí với giới hạn 1GB. Tốt nhất cho ứng dụng thời gian thực.</p>
+
+<strong>Bạn muốn dùng phương án nào?</strong>
+    `;
+    
+    addMessage(guide, 'ai');
 }

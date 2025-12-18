@@ -94,6 +94,33 @@ body {
     color: white;
 }
 
+.api-section label {
+    display: block;
+    font-size: 12px;
+    color: #bdc3c7;
+    margin-bottom: 5px;
+    margin-top: 10px;
+}
+
+.api-section h4 {
+    color: #3498db;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.storage-status {
+    font-size: 12px;
+    color: #bdc3c7;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #34495e;
+    border-radius: 4px;
+}
+
+.storage-status span {
+    font-weight: bold;
+}
+
 .api-section input::placeholder {
     color: #95a5a6;
 }

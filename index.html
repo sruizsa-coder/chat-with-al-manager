@@ -43,12 +43,35 @@
             </div>
 
             <div class="api-section">
-                <h3>⚙️ Cài đặt API</h3>
+                <h3>⚙️ Cài đặt</h3>
+                
+                <label>Gemini API Key:</label>
                 <input type="password" id="apiKey" placeholder="Nhập Gemini API Key..." />
                 <button onclick="saveApiKey()">Lưu API Key</button>
                 <p class="api-note">
                     <a href="https://aistudio.google.com/app/apikey" target="_blank">
                         Lấy API key miễn phí tại đây
+                    </a>
+                </p>
+
+                <hr style="margin: 20px 0; border-color: #34495e;">
+
+                <h4>☁️ Lưu trữ đám mây (Tùy chọn)</h4>
+                <p class="storage-status">
+                    Trạng thái: <span id="storageStatus">💾 Local Storage</span>
+                </p>
+                
+                <label>Google Sheets ID:</label>
+                <input type="text" id="spreadsheetId" placeholder="ID của Google Sheet..." />
+                <button onclick="saveSpreadsheetId()">Lưu Sheet ID</button>
+                
+                <button onclick="toggleCloudStorage()" style="background: #9b59b6; margin-top: 10px;">
+                    Bật/Tắt Cloud Storage
+                </button>
+                
+                <p class="api-note">
+                    📚 <a href="#" onclick="showCloudSetupGuide(); return false;">
+                        Hướng dẫn setup Google Sheets
                     </a>
                 </p>
             </div>
