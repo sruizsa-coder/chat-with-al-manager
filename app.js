@@ -145,7 +145,7 @@ function updateAIProviderInfo() {
     if (provider === 'groq') {
         infoEl.innerHTML = `
             <strong>🚀 Groq - Siêu nhanh & Miễn phí</strong><br>
-            Model: Llama 3.2 Vision (11B)<br>
+            Model: Llama 3.3 (70B) / Llama 3.2 Vision (90B)<br>
             Speed: ~500 tokens/giây<br>
             Limit: 14,400 requests/ngày<br>
             <a href="https://console.groq.com/keys" target="_blank">Lấy API key tại đây</a>
@@ -325,11 +325,11 @@ async function callGroqAPI(systemPrompt, userMessage, imageData) {
         }
     ];
     
-    // Groq supports vision with llama-3.2-vision models
-    let model = "llama-3.1-70b-versatile"; // Fast and smart
+    // Use latest Groq models (updated December 2025)
+    let model = "llama-3.3-70b-versatile"; // Latest fast model (replaces 3.1)
     
     if (imageData) {
-        model = "llama-3.2-11b-vision-preview";
+        model = "llama-3.2-90b-vision-preview"; // Latest vision model
         messages[1].content = [
             { type: "text", text: userMessage },
             { type: "image_url", image_url: { url: imageData } }
