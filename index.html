@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Account Manager - Quản lý tài khoản bằng AI</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>📊 Quản lý</h2>
+            </div>
+            
+            <div class="stats-section">
+                <h3>Thống kê</h3>
+                <div class="stat-card">
+                    <div class="stat-label">Tổng tài khoản</div>
+                    <div class="stat-value" id="totalAccounts">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Đã bán</div>
+                    <div class="stat-value" id="soldAccounts">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Đã thanh toán</div>
+                    <div class="stat-value" id="paidAccounts">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Chưa thanh toán</div>
+                    <div class="stat-value" id="unpaidAccounts">0</div>
+                </div>
+            </div>
+
+            <div class="action-section">
+                <h3>Thao tác nhanh</h3>
+                <button onclick="showAllAccounts()">📋 Xem tất cả tài khoản</button>
+                <button onclick="showUnpaidCustomers()">💰 Khách chưa thanh toán</button>
+                <button onclick="exportData()">💾 Xuất dữ liệu</button>
+                <button onclick="importData()">📥 Nhập dữ liệu</button>
+                <button onclick="clearChat()">🗑️ Xóa chat</button>
+            </div>
+
+            <div class="api-section">
+                <h3>⚙️ Cài đặt API</h3>
+                <input type="password" id="apiKey" placeholder="Nhập Gemini API Key..." />
+                <button onclick="saveApiKey()">Lưu API Key</button>
+                <p class="api-note">
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank">
+                        Lấy API key miễn phí tại đây
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="chat-header">
+                <h1>💬 Chat với AI Assistant</h1>
+                <p>Quản lý tài khoản thông minh - Hỗ trợ text và hình ảnh</p>
+            </div>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="message ai-message">
+                    <div class="message-content">
+                        <strong>AI Assistant:</strong>
+                        <p>Xin chào! Tôi là trợ lý AI giúp bạn quản lý tài khoản. Bạn có thể:</p>
+                        <ul>
+                            <li>📝 Thêm tài khoản mới: "Thêm tài khoản email@example.com giá 50k"</li>
+                            <li>👤 Thêm khách hàng: "Bán cho khách Zalo: Nguyễn Văn A"</li>
+                            <li>💰 Cập nhật thanh toán: "Khách A đã thanh toán"</li>
+                            <li>📊 Xem thống kê: "Thống kê tài khoản"</li>
+                            <li>🖼️ Gửi ảnh màn hình để AI tự động nhận diện thông tin</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
+                <button class="attach-btn" onclick="document.getElementById('imageInput').click()">
+                    📎
+                </button>
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="Nhập tin nhắn hoặc đính kèm ảnh..." 
+                    onkeypress="handleKeyPress(event)"
+                />
+                <button onclick="sendMessage()">Gửi</button>
+            </div>
+
+            <div id="imagePreview" class="image-preview" style="display: none;">
+                <img id="previewImg" src="" alt="Preview">
+                <button onclick="removeImage()">❌</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

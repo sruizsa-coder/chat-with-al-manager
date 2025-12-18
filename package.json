@@ -1,0 +1,23 @@
+{
+  "name": "ai-account-manager",
+  "version": "1.0.0",
+  "description": "Ứng dụng quản lý tài khoản với AI - Chat và nhận diện hình ảnh",
+  "main": "index.html",
+  "scripts": {
+    "start": "echo 'Mở file index.html trong trình duyệt để sử dụng ứng dụng'"
+  },
+  "keywords": [
+    "ai",
+    "chat",
+    "account-manager",
+    "gemini",
+    "vision-ai",
+    "vietnamese"
+  ],
+  "author": "AI Assistant",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sruizsa-coder/chat-with-al-manager.git"
+  }
+}
