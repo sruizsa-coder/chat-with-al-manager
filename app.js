@@ -144,10 +144,11 @@ function updateAIProviderInfo() {
     
     if (provider === 'groq') {
         infoEl.innerHTML = `
-            <strong>🚀 Groq - Siêu nhanh & Miễn phí</strong><br>
-            Model: Llama 3.3 (70B) / Llama 3.2 Vision (90B)<br>
+            <strong>🚀 Groq - Siêu nhanh (Text only)</strong><br>
+            Model: Llama 3.3 (70B)<br>
             Speed: ~500 tokens/giây<br>
             Limit: 14,400 requests/ngày<br>
+            ⚠️ Không hỗ trợ ảnh - dùng Gemini cho vision<br>
             <a href="https://console.groq.com/keys" target="_blank">Lấy API key tại đây</a>
         `;
     } else {
@@ -314,6 +315,12 @@ Khi phát hiện thông tin mới, hãy trả về JSON với format:
 }
 
 async function callGroqAPI(systemPrompt, userMessage, imageData) {
+    // Groq hiện không hỗ trợ vision, chuyển sang Gemini cho ảnh
+    if (imageData) {
+        addMessage('⚠️ Groq không hỗ trợ phân tích ảnh. Đang tự động chuyển sang Gemini...', 'ai');
+        return await callGeminiAPI(systemPrompt, userMessage, imageData);
+    }
+    
     const messages = [
         {
             role: "system",
@@ -325,16 +332,7 @@ async function callGroqAPI(systemPrompt, userMessage, imageData) {
         }
     ];
     
-    // Use latest Groq models (updated December 2025)
-    let model = "llama-3.3-70b-versatile"; // Latest fast model (replaces 3.1)
-    
-    if (imageData) {
-        model = "llama-3.2-90b-vision-preview"; // Latest vision model
-        messages[1].content = [
-            { type: "text", text: userMessage },
-            { type: "image_url", image_url: { url: imageData } }
-        ];
-    }
+    const model = "llama-3.3-70b-versatile"; // Latest text model
     
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
