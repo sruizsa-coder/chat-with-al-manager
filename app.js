@@ -6,9 +6,10 @@ let database = {
 };
 
 let currentImage = null;
-let apiKey = localStorage.getItem('gemini_api_key') || '';
+let apiKey = localStorage.getItem('ai_api_key') || '';
+let aiProvider = localStorage.getItem('ai_provider') || 'groq'; // groq or gemini
 let useCloudStorage = localStorage.getItem('use_cloud_storage') === 'true';
-let spreadsheetId = localStorage.getItem('spreadsheet_id') || '';
+let spreadsheetId = localStorage.getItem('spreadsheet_id') || '1L-iggbSlUwE6Z83GBHdOPLaTn9IpqaQoaHgzBKyhPVU';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -20,7 +21,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (spreadsheetId) {
         document.getElementById('spreadsheetId').value = spreadsheetId;
     }
+    // Set AI provider
+    document.getElementById('aiProvider').value = aiProvider;
     updateStorageStatus();
+    updateAIProviderInfo();
 });
 
 // Database functions
@@ -120,12 +124,39 @@ function updateStats() {
 // API Key management
 function saveApiKey() {
     const key = document.getElementById('apiKey').value.trim();
+    const provider = document.getElementById('aiProvider').value;
+    
     if (key) {
-        localStorage.setItem('gemini_api_key', key);
+        localStorage.setItem('ai_api_key', key);
+        localStorage.setItem('ai_provider', provider);
         apiKey = key;
-        addMessage('✅ Đã lưu Gemini API Key thành công!', 'ai');
+        aiProvider = provider;
+        addMessage(`✅ Đã lưu ${provider.toUpperCase()} API Key thành công!`, 'ai');
+        updateAIProviderInfo();
     } else {
         alert('Vui lòng nhập API Key!');
+    }
+}
+
+function updateAIProviderInfo() {
+    const infoEl = document.getElementById('aiProviderInfo');
+    const provider = document.getElementById('aiProvider').value;
+    
+    if (provider === 'groq') {
+        infoEl.innerHTML = `
+            <strong>🚀 Groq - Siêu nhanh & Miễn phí</strong><br>
+            Model: Llama 3.2 Vision (11B)<br>
+            Speed: ~500 tokens/giây<br>
+            Limit: 14,400 requests/ngày<br>
+            <a href="https://console.groq.com/keys" target="_blank">Lấy API key tại đây</a>
+        `;
+    } else {
+        infoEl.innerHTML = `
+            <strong>🔷 Google Gemini</strong><br>
+            Model: Gemini 1.5 Flash<br>
+            Limit: 15 requests/phút<br>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank">Lấy API key tại đây</a>
+        `;
     }
 }
 
@@ -252,47 +283,13 @@ Khi phát hiện thông tin mới, hãy trả về JSON với format:
     "message": "Phản hồi cho người dùng"
 }`;
 
-        let requestBody;
+        let aiResponse;
         
-        if (imageData) {
-            // Vision API call
-            const base64Image = imageData.split(',')[1];
-            requestBody = {
-                contents: [{
-                    parts: [
-                        { text: systemPrompt + "\n\nYêu cầu: " + message },
-                        {
-                            inline_data: {
-                                mime_type: "image/jpeg",
-                                data: base64Image
-                            }
-                        }
-                    ]
-                }]
-            };
+        if (aiProvider === 'groq') {
+            aiResponse = await callGroqAPI(systemPrompt, message, imageData);
         } else {
-            // Text only
-            requestBody = {
-                contents: [{
-                    parts: [{ text: systemPrompt + "\n\nYêu cầu: " + message }]
-                }]
-            };
+            aiResponse = await callGeminiAPI(systemPrompt, message, imageData);
         }
-
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-            throw new Error('API request failed: ' + response.statusText);
-        }
-
-        const data = await response.json();
-        const aiResponse = data.candidates[0].content.parts[0].text;
         
         // Try to parse as JSON for actions
         try {
@@ -312,8 +309,98 @@ Khi phát hiện thông tin mới, hãy trả về JSON với format:
         
     } catch (error) {
         console.error('AI Error:', error);
-        addMessage('Lỗi kết nối với AI. Vui lòng kiểm tra API Key và thử lại. Chi tiết: ' + error.message, 'ai');
+        addMessage(`Lỗi kết nối với AI (${aiProvider.toUpperCase()}). Vui lòng kiểm tra API Key và thử lại. Chi tiết: ${error.message}`, 'ai');
     }
+}
+
+async function callGroqAPI(systemPrompt, userMessage, imageData) {
+    const messages = [
+        {
+            role: "system",
+            content: systemPrompt
+        },
+        {
+            role: "user",
+            content: userMessage
+        }
+    ];
+    
+    // Groq supports vision with llama-3.2-vision models
+    let model = "llama-3.1-70b-versatile"; // Fast and smart
+    
+    if (imageData) {
+        model = "llama-3.2-11b-vision-preview";
+        messages[1].content = [
+            { type: "text", text: userMessage },
+            { type: "image_url", image_url: { url: imageData } }
+        ];
+    }
+    
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: model,
+            messages: messages,
+            temperature: 0.7,
+            max_tokens: 2000
+        })
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'Groq API request failed');
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+}
+
+async function callGeminiAPI(systemPrompt, userMessage, imageData) {
+    let requestBody;
+    
+    if (imageData) {
+        // Vision API call
+        const base64Image = imageData.split(',')[1];
+        requestBody = {
+            contents: [{
+                parts: [
+                    { text: systemPrompt + "\n\nYêu cầu: " + userMessage },
+                    {
+                        inline_data: {
+                            mime_type: "image/jpeg",
+                            data: base64Image
+                        }
+                    }
+                ]
+            }]
+        };
+    } else {
+        // Text only
+        requestBody = {
+            contents: [{
+                parts: [{ text: systemPrompt + "\n\nYêu cầu: " + userMessage }]
+            }]
+        };
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+        throw new Error('Gemini API request failed: ' + response.statusText);
+    }
+
+    const data = await response.json();
+    return data.candidates[0].content.parts[0].text;
 }
 
 function handleAIAction(action) {

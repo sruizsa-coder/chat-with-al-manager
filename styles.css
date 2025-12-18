@@ -94,6 +94,22 @@ body {
     color: white;
 }
 
+.api-section select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #34495e;
+    border-radius: 6px;
+    background: #34495e;
+    color: white;
+    cursor: pointer;
+}
+
+.api-section select option {
+    background: #2c3e50;
+    color: white;
+}
+
 .api-section label {
     display: block;
     font-size: 12px;

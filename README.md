@@ -15,6 +15,14 @@
 
 ### 1. Lấy API Key miễn phí
 
+#### Tùy chọn A: Groq (Khuyên dùng - Nhanh nhất)
+1. Truy cập: https://console.groq.com/keys
+2. Đăng nhập (miễn phí)
+3. Tạo API Key mới
+4. Copy API Key
+5. **Ưu điểm**: Nhanh gấp 5-10 lần Gemini, 14,400 requests/ngày
+
+#### Tùy chọn B: Google Gemini
 1. Truy cập: https://aistudio.google.com/app/apikey
 2. Đăng nhập với Google
 3. Tạo API Key mới
@@ -31,8 +39,9 @@
 ```bash
 # Clone repository
 git clone https://github.com/sruizsa-coder/chat-with-al-manager.git
-
-# Mở file index.html bằng trình duyệt
+Chọn AI Provider (Groq hoặc Gemini)
+3. Nhập API Key vào phần "Cài đặt AI" và nhấn "Lưu"
+4 Mở file index.html bằng trình duyệt
 # Hoặc dùng Live Server trong VS Code
 ```
 
@@ -80,12 +89,17 @@ chat-with-al-manager/
 
 ## 🔧 Công nghệ
 
-- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-- **AI API**: Google Gemini 1.5 Flash (miễn phí)
+- **Frontend**
+  - Groq (Llama 3.1/3.2 Vision) - Khuyên dùng
+  - Google Gemini 1.5 Flash
+- **Database**: 
+  - LocalStorage (lưu trên trình duyệt)
+  - Google Sheets (tùy chọn, cloud sync
 - **Database**: LocalStorage (lưu trên trình duyệt)
 - **Hosting**: GitHub Pages
 
-## 📝 Lưu ý
+##**Groq miễn phí**: 14,400 requests/ngày, ~500 tokens/giây
+- **Gemini miễn phí**
 
 - API Key được lưu trên trình duyệt của bạn (an toàn)
 - Dữ liệu được lưu local, không gửi lên server

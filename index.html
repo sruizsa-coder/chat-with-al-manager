@@ -43,16 +43,20 @@
             </div>
 
             <div class="api-section">
-                <h3>⚙️ Cài đặt</h3>
+                <h3>🤖 Cài đặt AI</h3>
                 
-                <label>Gemini API Key:</label>
-                <input type="password" id="apiKey" placeholder="Nhập Gemini API Key..." />
+                <label>Chọn AI Provider:</label>
+                <select id="aiProvider" onchange="updateAIProviderInfo()">
+                    <option value="groq">Groq (Khuyên dùng - Nhanh & Miễn phí)</option>
+                    <option value="gemini">Google Gemini</option>
+                </select>
+                
+                <div id="aiProviderInfo" style="padding: 10px; background: #34495e; border-radius: 6px; margin: 10px 0; font-size: 11px; line-height: 1.5;">
+                </div>
+                
+                <label>API Key:</label>
+                <input type="password" id="apiKey" placeholder="Nhập API Key..." />
                 <button onclick="saveApiKey()">Lưu API Key</button>
-                <p class="api-note">
-                    <a href="https://aistudio.google.com/app/apikey" target="_blank">
-                        Lấy API key miễn phí tại đây
-                    </a>
-                </p>
 
                 <hr style="margin: 20px 0; border-color: #34495e;">
 
